@@ -182,11 +182,11 @@ You now have separate databases per service.
 ##################################################
 k8 running and stopping  command 
 ##################################################
-🛑 STOP YOUR APPLICATION (Kubernetes way)
-✅ Option 1 — Delete everything (clean stop)
+STOP YOUR APPLICATION (Kubernetes way)
+Option 1 — Delete everything (clean stop)
 kubectl delete -k C:\Users\DELL\Desktop\Task-Manager\k8s
 
-👉 This removes:
+This removes:
 
 pods
 services
@@ -195,47 +195,47 @@ everything in your setup
 
 ✔ Clean shutdown
 
-✅ Option 2 — Scale to zero (best practice)
+Option 2 — Scale to zero (best practice)
 kubectl scale deployment auth-service --replicas=0 -n task-manager
 kubectl scale deployment task-service --replicas=0 -n task-manager
 kubectl scale deployment calendar-service --replicas=0 -n task-manager
 kubectl scale deployment gateway --replicas=0 -n task-manager
 
-👉 This:
+This:
 
 stops all containers
 keeps configuration intact
 
 ✔ Preferred in real systems
 
-🔁 RESTART YOUR APPLICATION
-✅ Option 1 — Scale back up
+RESTART YOUR APPLICATION
+Option 1 — Scale back up
 kubectl scale deployment auth-service --replicas=1 -n task-manager
 kubectl scale deployment task-service --replicas=1 -n task-manager
 kubectl scale deployment calendar-service --replicas=1 -n task-manager
 kubectl scale deployment gateway --replicas=1 -n task-manager
-✅ Option 2 — Restart pods (most common)
+Option 2 — Restart pods (most common)
 kubectl rollout restart deployment auth-service -n task-manager
 kubectl rollout restart deployment task-service -n task-manager
 kubectl rollout restart deployment calendar-service -n task-manager
 kubectl rollout restart deployment gateway -n task-manager
 
-👉 This recreates pods cleanly
+This recreates pods cleanly
 
-✅ Option 3 — Delete pods (quick & dirty)
+Option 3 — Delete pods (quick & dirty)
 kubectl delete pod -n task-manager --all
 
-👉 Kubernetes auto-creates new ones
+Kubernetes auto-creates new ones
 
-🔍 CHECK STATUS
+CHECK STATUS
 kubectl get pods -n task-manager
-⚠️ If you want to STOP Kubernetes completely
+If you want to STOP Kubernetes completely
 
 Since you're using Rancher Desktop:
 
-👉 Just turn off Kubernetes from Rancher Desktop UI
+Just turn off Kubernetes from Rancher Desktop UI
 
-💀 Brutal Truth
+Brutal Truth
 
 If you think:
 
