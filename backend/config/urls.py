@@ -1,10 +1,11 @@
 from django.contrib import admin
-from django.urls import include, path
-from django.views.generic import RedirectView
+from django.urls import include, path, re_path
+
+from .views import FrontendAppView
 
 
 urlpatterns = [
-    path("", RedirectView.as_view(url="/api/", permanent=False)),
     path("admin/", admin.site.urls),
     path("api/", include("tasks.urls")),
+    re_path(r"^(?!api/|admin/|static/).*$", FrontendAppView.as_view(), name="frontend"),
 ]

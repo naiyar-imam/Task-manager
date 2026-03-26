@@ -1,293 +1,264 @@
 # AI-Powered Task Management Dashboard
 
-A local-first full-stack task and productivity platform with Django REST Framework, JWT authentication, React, Tailwind CSS, Chart.js analytics, and PostgreSQL-ready backend configuration.
+A full-stack task platform now reworked into a true microservice architecture. The public app is served through a gateway, authentication is handled by a dedicated auth service, task CRUD and analytics live in a task service, and Google Calendar sync state lives in a separate calendar service.
 
-## Features
+## Architecture
 
-- JWT registration, login, refresh, and profile session restore
-- User-isolated task CRUD with title, description, status, priority, due date, and timestamps
-- Dashboard cards powered by backend aggregation
-- Task tabs for All, Today, Upcoming, and Completed
-- Filtering, search, sorting, and pagination
-- Analytics with status distribution, productivity trends, overdue tracking, and recent activity
-- Dark SaaS-style responsive UI with modal-based task creation and editing
-- Google Calendar OAuth connection with two-way task and calendar sync
-- Demo seed command with a polished portfolio-ready dataset
+- `gateway`
+  - serves the React app
+  - routes API traffic to backend services
+- `auth-service`
+  - registration
+  - login
+  - refresh
+  - current user profile
+  - owns the user database
+- `task-service`
+  - task CRUD
+  - filters, search, sorting, pagination
+  - dashboard stats
+  - analytics and trend data
+  - owns the task database
+- `calendar-service`
+  - Google OAuth
+  - Google Calendar connection state
+  - two-way sync by calling `task-service` over HTTP
+  - owns the calendar integration database
+
+This is no longer a monolith because the core domains are split into independently deployable services with separate databases.
 
 ## Project Structure
 
 ```text
-backend/
-frontend/
-README.md
+frontend/                     # React source
+gateway/                      # Nginx gateway + frontend static delivery
+services/
+  auth-service/               # User auth microservice
+  task-service/               # Task CRUD + analytics microservice
+  calendar-service/           # Google Calendar integration microservice
 docker-compose.yml
+backend/                      # Legacy monolith reference, no longer the default runtime
 ```
 
-## Backend Run (Local)
+## Run With Docker
 
-1. Install Python 3.11+.
-2. Move into the backend folder:
+This is the recommended local setup for the microservice version.
 
-```bash
-cd backend
-```
+1. Start the full stack:
 
-3. Create and activate a virtual environment:
-
-```bash
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
-
-If you already created it earlier, just run:
-
-```bash
-.venv\Scripts\Activate.ps1
-```
-
-4. Install dependencies:
-
-```bash
-pip install -r requirements.txt
-```
-
-5. Copy environment values:
-
-```bash
-Copy-Item .env.example .env
-```
-
-Recommended PostgreSQL values in `.env`:
-
-```env
-POSTGRES_DB=task_dashboard
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=127.0.0.1
-POSTGRES_PORT=5432
-```
-
-If you prefer a single URL instead, you can use:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/task_dashboard
-```
-
-Optional Google Calendar setup:
-
-- Set `FRONTEND_BASE_URL=http://127.0.0.1:5173`
-- Set `GOOGLE_CLIENT_ID=<your-google-client-id>`
-- Set `GOOGLE_CLIENT_SECRET=<your-google-client-secret>`
-- Set `GOOGLE_CALENDAR_REDIRECT_URI=http://127.0.0.1:8001/api/integrations/google/callback/`
-- Keep `GOOGLE_CALENDAR_ID=primary` unless you want a different calendar target
-- For the cleanest two-way sync, point `GOOGLE_CALENDAR_ID` to a dedicated Google calendar instead of your main personal calendar
-
-6. Run migrations:
-
-```bash
-python manage.py migrate
-```
-
-7. Seed the demo user and portfolio dataset:
-
-```bash
-python manage.py seed_demo_data --wipe
-```
-
-Demo credentials:
-
-- Username: `nehasharma`
-- Password: `Demo@12345`
-
-8. Start the Django API:
-
-```bash
-python manage.py runserver 127.0.0.1:8001
-```
-
-Backend base URL: `http://127.0.0.1:8001/api`
-Default database behavior:
-
-- PostgreSQL if `DATABASE_URL` or `POSTGRES_*` values are present
-- SQLite fallback via `backend/db.sqlite3` if PostgreSQL is not configured
-
-```env
-VITE_API_BASE_URL=http://127.0.0.1:8001/api
-```
-
-## Frontend Run (Local)
-
-1. Install dependencies:
-
-```bash
-cd frontend
-npm install
-```
-
-2. Copy environment values:
-
-```bash
-Copy-Item .env.example .env
-```
-
-3. Start the React development server:
-
-```bash
-npm run dev
-```
-
-Frontend URL: `http://127.0.0.1:5173`
-
-## Docker Run
-
-1. Build and start the full stack:
-
-```bash
-docker-compose up --build
+```powershell
+cd C:\Users\DELL\Desktop\Task-Manager
+docker compose up --build
 ```
 
 2. Open the app:
 
-- Frontend: `http://127.0.0.1:5173`
-- Backend API: `http://127.0.0.1:8001/api`
-- Backend health check: `http://127.0.0.1:8001/api/health/`
+- App: [http://127.0.0.1:8080](http://127.0.0.1:8080)
 
-3. Seed demo data inside Docker if you want a fresh dataset:
+3. Seed the demo auth user:
 
-```bash
-docker-compose exec backend python manage.py seed_demo_data --wipe
+```powershell
+docker compose exec auth-service python manage.py seed_demo_user
 ```
 
-Docker services included:
+This prints the user id for the demo account.
 
-- `db`: PostgreSQL 16
-- `backend`: Django API on port `8001`
-- `frontend`: Nginx serving the built React app on port `5173`
+4. Seed the demo tasks into `task-service` using that user id:
 
-Notes:
-
-- The Docker backend auto-seeds the portfolio demo user on startup
-- Demo login: `nehasharma` / `Demo@12345`
-
-## PostgreSQL Setup
-
-1. Install PostgreSQL and pgAdmin.
-2. Create a database named `task_dashboard`.
-3. Update `backend/.env` with either `POSTGRES_*` values or a `DATABASE_URL`.
-4. Run backend migrations:
-
-```bash
-cd backend
-.venv\Scripts\Activate.ps1
-python manage.py migrate
-python manage.py seed_demo_data --wipe
-python manage.py runserver 127.0.0.1:8001
+```powershell
+docker compose exec task-service python manage.py seed_demo_tasks --user-id 1 --wipe
 ```
 
-## How To View The Database
+If the auth-service command prints a different id, replace `1` with that id.
 
-### Option 1: pgAdmin
+5. Login with:
 
-1. Open pgAdmin.
-2. Register or open your local PostgreSQL server.
-3. Use:
-   - Host: `127.0.0.1`
-   - Port: `5432`
-   - Username: `postgres`
-   - Password: your PostgreSQL password
-4. Open:
-   - `Servers`
-   - `PostgreSQL`
-   - `Databases`
-   - `task_dashboard`
-   - `Schemas`
-   - `public`
-   - `Tables`
-
-Main tables to inspect:
-
-- `tasks_task`
-- `tasks_googlecalendarconnection`
-- `auth_user`
-
-### Option 2: psql
-
-```bash
-psql -U postgres -h 127.0.0.1 -d task_dashboard
+```text
+Username: nehasharma
+Password: Demo@12345
 ```
 
-Useful commands:
+## Service Ports
 
-```sql
-\dt
-SELECT * FROM auth_user;
-SELECT * FROM tasks_task;
-SELECT * FROM tasks_googlecalendarconnection;
-```
+- Gateway app: `8080`
+- Auth database: `5433`
+- Task database: `5434`
+- Calendar database: `5435`
 
-### Option 3: Django Admin
-
-Create an admin user:
-
-```bash
-cd backend
-.venv\Scripts\Activate.ps1
-python manage.py createsuperuser
-```
-
-Then open:
-
-- `http://127.0.0.1:8001/admin/`
+The backend service containers are intentionally private behind the gateway in the default Docker setup.
 
 ## Google Calendar Setup
 
-1. In Google Cloud Console, create or choose a project.
-2. Enable the Google Calendar API.
-3. Configure the OAuth consent screen.
-4. Create an OAuth Client ID for a Web application.
-5. Add an authorized redirect URI:
+Set these values before starting Docker, or add them to your shell environment:
 
-```text
-http://127.0.0.1:8001/api/integrations/google/callback/
+```powershell
+$env:GOOGLE_CLIENT_ID="your_client_id"
+$env:GOOGLE_CLIENT_SECRET="your_client_secret"
+$env:GOOGLE_CALENDAR_REDIRECT_URI="http://127.0.0.1:8080/api/integrations/google/callback/"
+$env:GOOGLE_CALENDAR_ID="primary"
 ```
 
-6. Put the client ID and client secret into `backend/.env`.
-7. Start backend and frontend, then open `Settings` and click `Connect Google Calendar`.
+Then run:
 
-The app uses the `https://www.googleapis.com/auth/calendar.events` scope so it can create, update, and import calendar events for task due dates.
+```powershell
+docker compose up --build
+```
 
-After you connect:
+In Google Cloud Console, add this authorized redirect URI exactly:
 
-- `Run Two-Way Sync` pulls new and edited Google Calendar events into the task app
-- The same sync also pushes local task changes back to Google Calendar
-- If a synced Google event is deleted, the linked local task is removed during the next sync
+```text
+http://127.0.0.1:8080/api/integrations/google/callback/
+```
 
-## API Endpoints
+The configuration now belongs to `calendar-service`, not the old monolith backend.
 
-- `POST /api/auth/register/`
-- `POST /api/auth/login/`
-- `POST /api/auth/refresh/`
-- `GET /api/auth/me/`
-- `GET /api/tasks/`
-- `POST /api/tasks/`
-- `PUT /api/tasks/{id}/`
-- `DELETE /api/tasks/{id}/`
-- `GET /api/stats/`
-- `GET /api/analytics/?days=7`
-- `GET /api/integrations/google/authorize/`
-- `GET /api/integrations/google/callback/`
-- `GET /api/integrations/google/status/`
-- `POST /api/integrations/google/sync/`
-- `DELETE /api/integrations/google/disconnect/`
+## How The Frontend Talks To Services
 
-## Query Parameters
+The React app uses a single same-origin base path:
 
-### Task listing
+- `/api/auth/*` -> `auth-service`
+- `/api/tasks/*` -> `task-service`
+- `/api/stats/*` -> `task-service`
+- `/api/analytics/*` -> `task-service`
+- `/api/integrations/google/*` -> `calendar-service`
 
-- `tab=all|today|upcoming|completed|overdue`
-- `status=pending|in_progress|completed`
-- `priority=low|medium|high`
-- `search=<term>`
-- `ordering=due_date|-due_date|created_at|-created_at|title|-title|priority|-priority|status`
-- `page=<number>`
-- `page_size=<number>`
+That routing is handled by [gateway/nginx.conf](C:/Users/DELL/Desktop/Task-Manager/gateway/nginx.conf).
+
+## Viewing The Databases
+
+You now have separate databases per service.
+
+### Auth Database
+
+- Host: `127.0.0.1`
+- Port: `5433`
+- Database: `auth_service`
+- Username: `postgres`
+- Password: `0000`
+
+### Task Database
+
+- Host: `127.0.0.1`
+- Port: `5434`
+- Database: `task_service`
+- Username: `postgres`
+- Password: `0000`
+
+### Calendar Database
+
+- Host: `127.0.0.1`
+- Port: `5435`
+- Database: `calendar_service`
+- Username: `postgres`
+- Password: `0000`
+
+### Example DBeaver / pgAdmin tables
+
+`auth_service`:
+- `auth_user`
+
+`task_service`:
+- `tasks_task`
+
+`calendar_service`:
+- `calendar_integration_googlecalendarconnection`
+
+## Key Files
+
+- Gateway: [gateway/nginx.conf](C:/Users/DELL/Desktop/Task-Manager/gateway/nginx.conf)
+- Auth API: [services/auth-service/accounts/views.py](C:/Users/DELL/Desktop/Task-Manager/services/auth-service/accounts/views.py)
+- Task API: [services/task-service/tasks/views.py](C:/Users/DELL/Desktop/Task-Manager/services/task-service/tasks/views.py)
+- Calendar API: [services/calendar-service/calendar_integration/views.py](C:/Users/DELL/Desktop/Task-Manager/services/calendar-service/calendar_integration/views.py)
+- Calendar sync logic: [services/calendar-service/calendar_integration/google_calendar.py](C:/Users/DELL/Desktop/Task-Manager/services/calendar-service/calendar_integration/google_calendar.py)
+- Compose stack: [docker-compose.yml](C:/Users/DELL/Desktop/Task-Manager/docker-compose.yml)
+
+## Notes
+
+- The legacy [backend](C:/Users/DELL/Desktop/Task-Manager/backend) folder is no longer the default runtime path for the app.
+- The microservice version is Docker-first for local development because it is the simplest way to run the service graph together.
+- Google sync is now service-to-service: `calendar-service` talks to `task-service` over HTTP instead of importing the task model directly.
+
+
+##################################################
+k8 running and stopping  command 
+##################################################
+🛑 STOP YOUR APPLICATION (Kubernetes way)
+✅ Option 1 — Delete everything (clean stop)
+kubectl delete -k C:\Users\DELL\Desktop\Task-Manager\k8s
+
+👉 This removes:
+
+pods
+services
+deployments
+everything in your setup
+
+✔ Clean shutdown
+
+✅ Option 2 — Scale to zero (best practice)
+kubectl scale deployment auth-service --replicas=0 -n task-manager
+kubectl scale deployment task-service --replicas=0 -n task-manager
+kubectl scale deployment calendar-service --replicas=0 -n task-manager
+kubectl scale deployment gateway --replicas=0 -n task-manager
+
+👉 This:
+
+stops all containers
+keeps configuration intact
+
+✔ Preferred in real systems
+
+🔁 RESTART YOUR APPLICATION
+✅ Option 1 — Scale back up
+kubectl scale deployment auth-service --replicas=1 -n task-manager
+kubectl scale deployment task-service --replicas=1 -n task-manager
+kubectl scale deployment calendar-service --replicas=1 -n task-manager
+kubectl scale deployment gateway --replicas=1 -n task-manager
+✅ Option 2 — Restart pods (most common)
+kubectl rollout restart deployment auth-service -n task-manager
+kubectl rollout restart deployment task-service -n task-manager
+kubectl rollout restart deployment calendar-service -n task-manager
+kubectl rollout restart deployment gateway -n task-manager
+
+👉 This recreates pods cleanly
+
+✅ Option 3 — Delete pods (quick & dirty)
+kubectl delete pod -n task-manager --all
+
+👉 Kubernetes auto-creates new ones
+
+🔍 CHECK STATUS
+kubectl get pods -n task-manager
+⚠️ If you want to STOP Kubernetes completely
+
+Since you're using Rancher Desktop:
+
+👉 Just turn off Kubernetes from Rancher Desktop UI
+
+💀 Brutal Truth
+
+If you think:
+
+“stop container = docker stop”
+  
+###############################################################################
+how to setup the project in you local first of all clone this repo in your local and then build the  image here are the command to build the image in the local terminal or powerShell first go to project folder.
+
+cd C:\Users\DELL\Desktop\Task-Manager
+docker build -t task-manager-auth-service:local -f services/auth-service/Dockerfile .
+docker build -t task-manager-task-service:local -f services/task-service/Dockerfile .
+docker build -t task-manager-calendar-service:local -f services/calendar-service/Dockerfile .
+docker build -t task-manager-gateway:local -f gateway/Dockerfile .
+
+
+
+after builder the image then run the below command to activate the image in containers
+
+kubectl apply -k C:\Users\DELL\Desktop\Task-Manager\k8s
+
+
+after the open the port for publically access below the command 
+
+kubectl port-forward -n task-manager svc/gateway 8080:80
+
+ thats it and already i wiil share the command how to stop the running container

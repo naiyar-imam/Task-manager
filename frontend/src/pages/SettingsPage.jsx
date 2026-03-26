@@ -116,7 +116,7 @@ export default function SettingsPage() {
       );
     } else if (state === "not_configured") {
       setGoogleError(
-        "Google Calendar is not configured on the backend yet. Add the Google OAuth environment variables first."
+        "Google Calendar is not configured in calendar-service yet. Add the Google OAuth environment variables first."
       );
     }
   }, [location.search]);
@@ -130,7 +130,7 @@ export default function SettingsPage() {
         ? googleStatus.missing_settings.join(", ")
         : "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI";
       setGoogleError(
-        `Google Calendar is not configured yet. Add these values in backend/.env: ${missing}`
+        `Google Calendar is not configured yet. Add these values in services/calendar-service/.env: ${missing}`
       );
       setGoogleAction("");
       return;
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                   </p>
                   <p className="mt-2 text-slate-400">
                     {!googleStatus.configured
-                      ? "Add the Google OAuth values in backend/.env first."
+                      ? "Add the Google OAuth values in services/calendar-service/.env first."
                       : googleStatus.connected
                         ? "Your task due dates can now sync into Google Calendar."
                         : "Connect your Google account to sync task deadlines into your calendar."}
@@ -391,7 +391,7 @@ export default function SettingsPage() {
                     </button>
 
                     <div className="panel-interactive p-4 text-slate-400">
-                      <p className="font-medium text-white">Required backend variables</p>
+                      <p className="font-medium text-white">Required calendar-service variables</p>
                       <p className="mt-2">
                         {googleStatus.missing_settings?.length
                           ? googleStatus.missing_settings.join(", ")
@@ -411,7 +411,7 @@ export default function SettingsPage() {
         <div className="panel p-6">
           <h3 className="section-title">Workspace Preferences</h3>
           <p className="mt-1 text-sm text-slate-400">
-            These settings are stored in your browser and shape the frontend experience.
+            These settings are stored in your browser and shape the app experience.
           </p>
 
           <div className="mt-6 grid gap-5 lg:grid-cols-2">

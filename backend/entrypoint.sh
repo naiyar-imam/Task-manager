@@ -2,6 +2,7 @@
 set -e
 
 python manage.py migrate
+python manage.py collectstatic --noinput
 
 if [ "${SEED_DEMO_DATA:-true}" = "true" ]; then
   python manage.py seed_demo_data

@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-manager-config
+  namespace: task-manager
+data:
+  DEBUG: "true"
+  AUTH_ALLOWED_HOSTS: "127.0.0.1,localhost,auth-service,gateway"
+  TASK_ALLOWED_HOSTS: "127.0.0.1,localhost,task-service,gateway"
+  CALENDAR_ALLOWED_HOSTS: "127.0.0.1,localhost,calendar-service,gateway"
+  AUTH_POSTGRES_DB: "auth_service"
+  TASK_POSTGRES_DB: "task_service"
+  CALENDAR_POSTGRES_DB: "calendar_service"
+  POSTGRES_USER: "postgres"
+  POSTGRES_PORT: "5432"
+  AUTH_POSTGRES_HOST: "auth-db"
+  TASK_POSTGRES_HOST: "task-db"
+  CALENDAR_POSTGRES_HOST: "calendar-db"
+  FRONTEND_BASE_URL: "http://127.0.0.1:8080"
+  TASK_SERVICE_URL: "http://task-service:8000"
+  GOOGLE_CALENDAR_REDIRECT_URI: "http://127.0.0.1:8080/api/integrations/google/callback/"
