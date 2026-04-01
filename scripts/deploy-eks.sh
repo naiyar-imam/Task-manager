@@ -68,9 +68,9 @@ sed -i \
   k8s/eks/README.md
 
 kubectl apply -f k8s/eks/namespace.yaml
-kubectl apply -f k8s/eks/configmap.yaml
+kubectl apply -n "${NAMESPACE}" -f k8s/eks/configmap.yaml
 kubectl apply -f k8s/eks/secret.yaml
-kubectl apply -f k8s/eks/databases.yaml
+kubectl apply -n "${NAMESPACE}" -f k8s/eks/databases.yaml
 
 kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/auth-db --timeout=300s
 kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/task-db --timeout=300s
