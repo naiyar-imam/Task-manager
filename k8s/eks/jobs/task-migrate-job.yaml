@@ -3,7 +3,7 @@ kind: Job
 metadata:
   name: task-service-migrate
 spec:
-  ttlSecondsAfterFinished: 3600
+  ttlSecondsAfterFinished: 60
   backoffLimit: 3
   template:
     spec:

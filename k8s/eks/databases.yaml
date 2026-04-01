@@ -3,6 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: auth-db-pvc
 spec:
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -14,6 +15,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: task-db-pvc
 spec:
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -25,6 +27,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: calendar-db-pvc
 spec:
+  storageClassName: gp2
   accessModes:
     - ReadWriteOnce
   resources:
@@ -37,6 +40,8 @@ metadata:
   name: auth-db
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: auth-db
@@ -93,6 +98,8 @@ metadata:
   name: task-db
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: task-db
@@ -149,6 +156,8 @@ metadata:
   name: calendar-db
 spec:
   replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: calendar-db

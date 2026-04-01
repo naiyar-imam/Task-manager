@@ -3,8 +3,13 @@ kind: Deployment
 metadata:
   name: calendar-service
 spec:
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: calendar-service
@@ -91,6 +96,7 @@ spec:
                   value: calendar-service
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /health/
@@ -100,6 +106,7 @@ spec:
                   value: calendar-service
             initialDelaySeconds: 20
             periodSeconds: 20
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 250m

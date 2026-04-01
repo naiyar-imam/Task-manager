@@ -3,8 +3,13 @@ kind: Deployment
 metadata:
   name: task-service
 spec:
-  replicas: 1
+  replicas: 0
   revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: task-service
@@ -76,6 +81,7 @@ spec:
                   value: task-service
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /health/
@@ -85,6 +91,7 @@ spec:
                   value: task-service
             initialDelaySeconds: 20
             periodSeconds: 20
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 300m

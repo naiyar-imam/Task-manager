@@ -5,6 +5,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 NAMESPACE="${NAMESPACE:-warfield-task-manager-prod}"
 AWS_REGION="${AWS_REGION:-$(aws configure get region 2>/dev/null || true)}"
 AWS_ACCOUNT_ID="${AWS_ACCOUNT_ID:-$(aws sts get-caller-identity --query Account --output text 2>/dev/null || true)}"
+ENABLE_CALENDAR_SERVICE="${ENABLE_CALENDAR_SERVICE:-false}"
 
 if [[ -z "${AWS_REGION}" ]]; then
   echo "AWS region not found. Set AWS_REGION or configure AWS CLI first." >&2
@@ -21,6 +22,7 @@ ECR_BASE="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 echo "Using namespace: ${NAMESPACE}"
 echo "Using AWS region: ${AWS_REGION}"
 echo "Using AWS account: ${AWS_ACCOUNT_ID}"
+echo "Enable calendar service: ${ENABLE_CALENDAR_SERVICE}"
 
 cd "${ROOT_DIR}"
 
@@ -68,17 +70,34 @@ sed -i \
 kubectl apply -f k8s/eks/namespace.yaml
 kubectl apply -f k8s/eks/configmap.yaml
 kubectl apply -f k8s/eks/secret.yaml
+kubectl apply -f k8s/eks/databases.yaml
+
+kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/auth-db --timeout=300s
+kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/task-db --timeout=300s
+kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/calendar-db --timeout=300s
 
 kubectl apply -k k8s/eks/jobs
 kubectl wait --for=condition=complete -n "${NAMESPACE}" job/auth-service-migrate --timeout=300s
 kubectl wait --for=condition=complete -n "${NAMESPACE}" job/task-service-migrate --timeout=300s
 kubectl wait --for=condition=complete -n "${NAMESPACE}" job/calendar-service-migrate --timeout=300s
+kubectl delete job auth-service-migrate task-service-migrate calendar-service-migrate -n "${NAMESPACE}" --ignore-not-found
 
 kubectl apply -k k8s/eks
 
+kubectl scale deployment auth-service --replicas=1 -n "${NAMESPACE}"
 kubectl rollout status deployment/auth-service -n "${NAMESPACE}" --timeout=300s
+
+kubectl scale deployment task-service --replicas=1 -n "${NAMESPACE}"
 kubectl rollout status deployment/task-service -n "${NAMESPACE}" --timeout=300s
-kubectl rollout status deployment/calendar-service -n "${NAMESPACE}" --timeout=300s
+
+if [[ "${ENABLE_CALENDAR_SERVICE}" == "true" ]]; then
+  kubectl scale deployment calendar-service --replicas=1 -n "${NAMESPACE}"
+  kubectl rollout status deployment/calendar-service -n "${NAMESPACE}" --timeout=300s
+else
+  echo "Skipping calendar-service startup. Set ENABLE_CALENDAR_SERVICE=true to enable Google Calendar in-cluster."
+fi
+
+kubectl scale deployment gateway --replicas=1 -n "${NAMESPACE}"
 kubectl rollout status deployment/gateway -n "${NAMESPACE}" --timeout=300s
 
 ALB_HOSTNAME="$(kubectl get ingress task-manager-gateway -n "${NAMESPACE}" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
@@ -92,3 +111,6 @@ echo "Google Calendar is intentionally disabled until you later set:"
 echo "  FRONTEND_BASE_URL"
 echo "  GOOGLE_CALENDAR_REDIRECT_URI"
 echo "to your final public hostname."
+if [[ "${ENABLE_CALENDAR_SERVICE}" != "true" ]]; then
+  echo "calendar-service was left scaled to 0 to reduce EKS pod/IP pressure."
+fi

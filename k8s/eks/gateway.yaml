@@ -3,8 +3,13 @@ kind: Deployment
 metadata:
   name: gateway
 spec:
-  replicas: 2
+  replicas: 0
   revisionHistoryLimit: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 0
+      maxUnavailable: 1
   selector:
     matchLabels:
       app: gateway
@@ -27,12 +32,14 @@ spec:
               port: 80
             initialDelaySeconds: 10
             periodSeconds: 10
+            timeoutSeconds: 5
           livenessProbe:
             httpGet:
               path: /healthz
               port: 80
             initialDelaySeconds: 20
             periodSeconds: 20
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 100m
@@ -40,11 +47,6 @@ spec:
             limits:
               cpu: 300m
               memory: 256Mi
-          securityContext:
-            allowPrivilegeEscalation: false
-            capabilities:
-              drop:
-                - ALL
 ---
 apiVersion: v1
 kind: Service
