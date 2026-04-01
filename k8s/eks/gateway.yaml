@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: gateway
 spec:
-  replicas: 0
+  replicas: 1
   revisionHistoryLimit: 3
   strategy:
     type: RollingUpdate

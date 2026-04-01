@@ -109,6 +109,14 @@ fi
 kubectl scale deployment gateway --replicas=1 -n "${NAMESPACE}"
 kubectl rollout status deployment/gateway -n "${NAMESPACE}" --timeout=300s
 
+if ! kubectl get deployment aws-load-balancer-controller -n kube-system >/dev/null 2>&1; then
+  echo ""
+  echo "Deployment complete inside the cluster, but no external hostname was created."
+  echo "The AWS Load Balancer Controller is not installed in kube-system."
+  echo "Install the controller, then re-apply the ingress or rerun this script."
+  exit 0
+fi
+
 ALB_HOSTNAME="$(kubectl get ingress task-manager-gateway -n "${NAMESPACE}" -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
 
 echo ""

@@ -3,6 +3,7 @@ kind: Ingress
 metadata:
   name: task-manager-gateway
   annotations:
+    kubernetes.io/ingress.class: alb
     alb.ingress.kubernetes.io/backend-protocol: HTTP
     alb.ingress.kubernetes.io/healthcheck-path: /healthz
     alb.ingress.kubernetes.io/listen-ports: '[{"HTTP":80}]'
