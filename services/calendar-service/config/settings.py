@@ -29,6 +29,23 @@ def get_env_list(key, default=""):
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
+def get_env_bool(key, default=False):
+    value = os.getenv(key)
+    if value is None:
+        return default
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def get_env_int(key, default):
+    value = os.getenv(key)
+    if value is None:
+        return default
+    try:
+        return int(value)
+    except ValueError:
+        return default
+
+
 def build_database_url():
     database_url = os.getenv("DATABASE_URL", "").strip()
     if database_url:
@@ -37,7 +54,7 @@ def build_database_url():
     postgres_db = os.getenv("POSTGRES_DB", "calendar_service").strip()
     postgres_user = os.getenv("POSTGRES_USER", "postgres").strip()
     postgres_password = os.getenv("POSTGRES_PASSWORD", "").strip()
-    postgres_host = os.getenv("POSTGRES_HOST", "127.0.0.1").strip()
+    postgres_host = os.getenv("POSTGRES_HOST", "calendar-db").strip()
     postgres_port = os.getenv("POSTGRES_PORT", "5432").strip()
 
     credentials = quote_plus(postgres_user)
@@ -51,18 +68,21 @@ load_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "calendar-service-django-secret-key")
 JWT_SIGNING_KEY = os.getenv("JWT_SIGNING_KEY", SECRET_KEY)
-DEBUG = os.getenv("DEBUG", "True").lower() == "true"
+JWT_ISSUER = os.getenv("JWT_ISSUER", "task-manager-auth-service").strip()
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "task-manager-clients").strip()
+DEBUG = get_env_bool("DEBUG", False)
 ALLOWED_HOSTS = get_env_list(
     "ALLOWED_HOSTS",
-    "127.0.0.1,localhost,calendar-service",
+    "calendar-service",
 )
-FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "http://127.0.0.1:8080").rstrip("/")
+CSRF_TRUSTED_ORIGINS = get_env_list("CSRF_TRUSTED_ORIGINS")
+FRONTEND_BASE_URL = os.getenv("FRONTEND_BASE_URL", "").rstrip("/")
 TASK_SERVICE_URL = os.getenv("TASK_SERVICE_URL", "http://task-service:8000").rstrip("/")
 GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
 GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 GOOGLE_CALENDAR_REDIRECT_URI = os.getenv(
     "GOOGLE_CALENDAR_REDIRECT_URI",
-    "http://127.0.0.1:8080/api/integrations/google/callback/",
+    "",
 )
 GOOGLE_CALENDAR_ID = os.getenv("GOOGLE_CALENDAR_ID", "primary")
 GOOGLE_CALENDAR_SCOPES = [
@@ -124,7 +144,28 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+USE_X_FORWARDED_HOST = get_env_bool("USE_X_FORWARDED_HOST", True)
+
+if get_env_bool("USE_PROXY_SSL_HEADER", True):
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+SECURE_SSL_REDIRECT = get_env_bool("SECURE_SSL_REDIRECT", False)
+SESSION_COOKIE_SECURE = get_env_bool("SESSION_COOKIE_SECURE", not DEBUG)
+CSRF_COOKIE_SECURE = get_env_bool("CSRF_COOKIE_SECURE", not DEBUG)
+SECURE_CONTENT_TYPE_NOSNIFF = True
+SECURE_REFERRER_POLICY = os.getenv(
+    "SECURE_REFERRER_POLICY",
+    "strict-origin-when-cross-origin",
+)
+X_FRAME_OPTIONS = os.getenv("X_FRAME_OPTIONS", "DENY")
+SECURE_HSTS_SECONDS = get_env_int("SECURE_HSTS_SECONDS", 0)
+SECURE_HSTS_INCLUDE_SUBDOMAINS = get_env_bool(
+    "SECURE_HSTS_INCLUDE_SUBDOMAINS",
+    False,
+)
+SECURE_HSTS_PRELOAD = get_env_bool("SECURE_HSTS_PRELOAD", False)
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
@@ -135,9 +176,24 @@ REST_FRAMEWORK = {
     ),
 }
 
+if DEBUG:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
+        "rest_framework.renderers.JSONRenderer",
+        "rest_framework.renderers.BrowsableAPIRenderer",
+    )
+else:
+    REST_FRAMEWORK["DEFAULT_RENDERER_CLASSES"] = (
+        "rest_framework.renderers.JSONRenderer",
+    )
+
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(
+        minutes=get_env_int("JWT_ACCESS_TOKEN_MINUTES", 60)
+    ),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=get_env_int("JWT_REFRESH_TOKEN_DAYS", 7)),
     "AUTH_HEADER_TYPES": ("Bearer",),
+    "ALGORITHM": "HS256",
     "SIGNING_KEY": JWT_SIGNING_KEY,
+    "ISSUER": JWT_ISSUER,
+    "AUDIENCE": JWT_AUDIENCE,
 }

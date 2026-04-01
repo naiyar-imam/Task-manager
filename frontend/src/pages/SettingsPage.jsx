@@ -130,7 +130,7 @@ export default function SettingsPage() {
         ? googleStatus.missing_settings.join(", ")
         : "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_CALENDAR_REDIRECT_URI";
       setGoogleError(
-        `Google Calendar is not configured yet. Add these values in services/calendar-service/.env: ${missing}`
+        `Google Calendar is not configured yet. Add these values to the calendar-service environment or Kubernetes secret/config: ${missing}`
       );
       setGoogleAction("");
       return;
@@ -315,7 +315,7 @@ export default function SettingsPage() {
                   </p>
                   <p className="mt-2 text-slate-400">
                     {!googleStatus.configured
-                      ? "Add the Google OAuth values in services/calendar-service/.env first."
+                      ? "Add the Google OAuth values to the calendar-service environment first."
                       : googleStatus.connected
                         ? "Your task due dates can now sync into Google Calendar."
                         : "Connect your Google account to sync task deadlines into your calendar."}

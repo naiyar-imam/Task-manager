@@ -71,6 +71,8 @@ spec:
                   key: POSTGRES_PORT
             - name: SEED_DEMO_USER
               value: "true"
+            - name: RUN_MIGRATIONS_ON_STARTUP
+              value: "true"
           readinessProbe:
             httpGet:
               path: /health/

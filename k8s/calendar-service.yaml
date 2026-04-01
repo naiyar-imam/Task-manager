@@ -102,6 +102,8 @@ spec:
                 secretKeyRef:
                   name: task-manager-secrets
                   key: google-calendar-id
+            - name: RUN_MIGRATIONS_ON_STARTUP
+              value: "true"
           readinessProbe:
             httpGet:
               path: /health/

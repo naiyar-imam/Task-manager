@@ -10,3 +10,4 @@ frontend/dist/
 .venv/
 venv/
 .env
+k8s/eks/secret.yaml

@@ -59,10 +59,13 @@ services:
       auth-db:
         condition: service_healthy
     environment:
-      DEBUG: "true"
+      DEBUG: "false"
       DJANGO_SECRET_KEY: auth-service-django-secret-key-change-me
       JWT_SIGNING_KEY: shared-microservice-jwt-signing-key-change-me
+      JWT_ISSUER: task-manager-auth-service
+      JWT_AUDIENCE: task-manager-clients
       ALLOWED_HOSTS: 127.0.0.1,localhost,auth-service,gateway
+      RUN_MIGRATIONS_ON_STARTUP: "true"
       POSTGRES_DB: auth_service
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "0000"
@@ -79,10 +82,13 @@ services:
       task-db:
         condition: service_healthy
     environment:
-      DEBUG: "true"
+      DEBUG: "false"
       DJANGO_SECRET_KEY: task-service-django-secret-key-change-me
       JWT_SIGNING_KEY: shared-microservice-jwt-signing-key-change-me
+      JWT_ISSUER: task-manager-auth-service
+      JWT_AUDIENCE: task-manager-clients
       ALLOWED_HOSTS: 127.0.0.1,localhost,task-service,gateway
+      RUN_MIGRATIONS_ON_STARTUP: "true"
       POSTGRES_DB: task_service
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "0000"
@@ -100,10 +106,13 @@ services:
       task-service:
         condition: service_started
     environment:
-      DEBUG: "true"
+      DEBUG: "false"
       DJANGO_SECRET_KEY: calendar-service-django-secret-key-change-me
       JWT_SIGNING_KEY: shared-microservice-jwt-signing-key-change-me
+      JWT_ISSUER: task-manager-auth-service
+      JWT_AUDIENCE: task-manager-clients
       ALLOWED_HOSTS: 127.0.0.1,localhost,calendar-service,gateway
+      RUN_MIGRATIONS_ON_STARTUP: "true"
       POSTGRES_DB: calendar_service
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: "0000"

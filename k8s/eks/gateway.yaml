@@ -2,9 +2,9 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gateway
-  namespace: task-manager
 spec:
-  replicas: 1
+  replicas: 2
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       app: gateway
@@ -13,12 +13,14 @@ spec:
       labels:
         app: gateway
     spec:
+      terminationGracePeriodSeconds: 15
       containers:
         - name: gateway
-          image: task-manager-gateway:local
-          imagePullPolicy: IfNotPresent
+          image: task-manager-gateway
+          imagePullPolicy: Always
           ports:
-            - containerPort: 80
+            - name: http
+              containerPort: 80
           readinessProbe:
             httpGet:
               path: /healthz
@@ -31,15 +33,27 @@ spec:
               port: 80
             initialDelaySeconds: 20
             periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: gateway
-  namespace: task-manager
 spec:
   selector:
     app: gateway
   ports:
-    - port: 80
+    - name: http
+      port: 80
       targetPort: 80

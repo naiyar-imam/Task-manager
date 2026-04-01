@@ -1,0 +1,126 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calendar-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app: calendar-service
+  template:
+    metadata:
+      labels:
+        app: calendar-service
+    spec:
+      terminationGracePeriodSeconds: 30
+      initContainers:
+        - name: wait-for-calendar-db
+          image: busybox:1.36
+          command: ["sh", "-c", "until nc -z calendar-db 5432; do echo waiting for calendar-db; sleep 2; done"]
+      containers:
+        - name: calendar-service
+          image: task-manager-calendar-service
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: task-manager-production-config
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: calendar-database-url
+            - name: DJANGO_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: calendar-django-secret-key
+            - name: JWT_SIGNING_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: shared-jwt-signing-key
+            - name: ALLOWED_HOSTS
+              valueFrom:
+                configMapKeyRef:
+                  name: task-manager-production-config
+                  key: CALENDAR_ALLOWED_HOSTS
+            - name: CSRF_TRUSTED_ORIGINS
+              valueFrom:
+                configMapKeyRef:
+                  name: task-manager-production-config
+                  key: CALENDAR_CSRF_TRUSTED_ORIGINS
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: google-client-id
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: google-client-secret
+            - name: GOOGLE_CALENDAR_ID
+              valueFrom:
+                secretKeyRef:
+                  name: task-manager-production-secrets
+                  key: google-calendar-id
+            - name: RUN_MIGRATIONS_ON_STARTUP
+              value: "false"
+            - name: RUN_COLLECTSTATIC_ON_STARTUP
+              value: "false"
+          startupProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: calendar-service
+            failureThreshold: 30
+            periodSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: calendar-service
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health/
+              port: 8000
+              httpHeaders:
+                - name: Host
+                  value: calendar-service
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 250m
+              memory: 384Mi
+            limits:
+              cpu: 700m
+              memory: 768Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calendar-service
+spec:
+  selector:
+    app: calendar-service
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
