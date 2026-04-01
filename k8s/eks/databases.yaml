@@ -163,7 +163,7 @@ metadata:
   name: calendar-db
   namespace: warfield-task-manager-prod
 spec:
-  replicas: 1
+  replicas: 0
   strategy:
     type: Recreate
   selector:

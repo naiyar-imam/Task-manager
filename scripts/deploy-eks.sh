@@ -65,6 +65,7 @@ sed -i \
   k8s/eks/secret.yaml \
   k8s/eks/subdomain-ingress.example.yaml \
   k8s/eks/configmap.yaml \
+  k8s/eks/jobs-core/kustomization.yaml \
   k8s/eks/README.md
 
 kubectl apply -f k8s/eks/namespace.yaml
@@ -74,13 +75,21 @@ kubectl apply -n "${NAMESPACE}" -f k8s/eks/databases.yaml
 
 kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/auth-db --timeout=300s
 kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/task-db --timeout=300s
-kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/calendar-db --timeout=300s
 
-kubectl apply -k k8s/eks/jobs
-kubectl wait --for=condition=complete -n "${NAMESPACE}" job/auth-service-migrate --timeout=300s
-kubectl wait --for=condition=complete -n "${NAMESPACE}" job/task-service-migrate --timeout=300s
-kubectl wait --for=condition=complete -n "${NAMESPACE}" job/calendar-service-migrate --timeout=300s
-kubectl delete job auth-service-migrate task-service-migrate calendar-service-migrate -n "${NAMESPACE}" --ignore-not-found
+if [[ "${ENABLE_CALENDAR_SERVICE}" == "true" ]]; then
+  kubectl scale deployment calendar-db --replicas=1 -n "${NAMESPACE}"
+  kubectl wait --for=condition=available -n "${NAMESPACE}" deployment/calendar-db --timeout=300s
+  kubectl apply -k k8s/eks/jobs
+  kubectl wait --for=condition=complete -n "${NAMESPACE}" job/auth-service-migrate --timeout=300s
+  kubectl wait --for=condition=complete -n "${NAMESPACE}" job/task-service-migrate --timeout=300s
+  kubectl wait --for=condition=complete -n "${NAMESPACE}" job/calendar-service-migrate --timeout=300s
+  kubectl delete job auth-service-migrate task-service-migrate calendar-service-migrate -n "${NAMESPACE}" --ignore-not-found
+else
+  kubectl apply -k k8s/eks/jobs-core
+  kubectl wait --for=condition=complete -n "${NAMESPACE}" job/auth-service-migrate --timeout=300s
+  kubectl wait --for=condition=complete -n "${NAMESPACE}" job/task-service-migrate --timeout=300s
+  kubectl delete job auth-service-migrate task-service-migrate -n "${NAMESPACE}" --ignore-not-found
+fi
 
 kubectl apply -k k8s/eks
 
